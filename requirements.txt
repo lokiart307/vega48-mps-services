@@ -1,0 +1,10 @@
+torch>=2.2.0
+torchvision>=0.17.0
+transformers>=4.46.0
+sentence-transformers>=3.2.0
+diffusers>=0.30.0
+accelerate>=1.0.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+pillow>=10.0.0
+pyvips>=3.0.0
