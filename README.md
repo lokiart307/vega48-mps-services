@@ -49,7 +49,17 @@ Batch 128 is the sweet spot. 256 drops off — likely VRAM pressure on the 8GB c
 - Port 8022
 - ~3.5GB VRAM
 
-*Benchmarks: coming soon*
+**Benchmarks:**
+
+| Mode | Speed |
+|------|-------|
+| Short captions (seq) | 12.3s/cap, 0.08 cap/sec |
+| Normal captions (seq) | 28.8s/cap, 0.03 cap/sec |
+| 2-4 workers | No throughput gain — MPS serializes |
+| Batch 2-8 | Sequential internally |
+| RAM | Stable ~20.5GB, ~44GB free |
+
+Concurrency does not help. MPS serializes all GPU work.
 
 ### Image Generation — `sdxl_service.py`
 
