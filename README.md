@@ -38,6 +38,20 @@ FastAPI service running [nomic-embed-text-v2-moe](https://huggingface.co/nomic-a
 
 Batch 128 is the sweet spot. 256 drops off — likely VRAM pressure on the 8GB card. 4 workers × batch 128 is the efficient operating point at ~103 embeds/sec; going to 8 workers only gains ~9% more.
 
+**MPS vs CPU comparison:**
+
+| Batch Size | MPS (Vega 48) | CPU (i9, 16 threads) | Winner |
+|-----------|---------------|---------------------|--------|
+| 1 (sequential) | 3.4/sec (295ms) | 6.0/sec (167ms) | CPU 1.8x |
+| 8 | 4.3/sec | 12.3/sec | CPU 2.9x |
+| 32 | 9.4/sec | 14.6/sec | CPU 1.6x |
+| 64 | 16.4/sec | 14.9/sec | MPS 1.1x |
+| 128 | 29.1/sec | 15.1/sec | MPS 1.9x |
+| 256 | 43.0/sec | 15.3/sec | MPS 2.8x |
+| 1000 texts | 22.3/sec | 17.5/sec | MPS 1.3x |
+
+CPU is faster for small batches — nearly 2x at single requests. But CPU plateaus at ~15 embeds/sec regardless of batch size, while MPS keeps scaling. The crossover point is around batch 64. At batch 256, MPS is nearly 3x faster. And when your CPU is busy with other work, MPS doesn't compete for those cycles.
+
 ### Vision Captioning — `moondream_service.py`
 
 [Moondream2](https://huggingface.co/vikhyatk/moondream2) (1.8B) in fp16 on MPS. Captioning, visual Q&A, batch captioning.
@@ -60,6 +74,16 @@ Batch 128 is the sweet spot. 256 drops off — likely VRAM pressure on the 8GB c
 | RAM | Stable ~20.5GB, ~44GB free |
 
 Concurrency does not help. MPS serializes all GPU work.
+
+**MPS vs CPU comparison:**
+
+| | MPS (Vega 48, fp16) | CPU (i9, 16 threads, fp32) |
+|---|---|---|
+| Short caption | **12.3s** | ~450s (37x slower) |
+| Normal caption | **28.8s** | est. ~1000s+ |
+| RAM usage | ~21GB stable | ~19GB |
+
+CPU is unusable for captioning on this model. Moondream's custom architecture requires fp16→fp32 casting on CPU (x86 doesn't support fp16 LayerNorm), and even with that working, a single short caption takes **6-8 minutes** vs 12 seconds on MPS. The Vega 48 wins by 30-40x despite being an 8GB card from 2018.
 
 ### Image Generation — `sdxl_service.py`
 
